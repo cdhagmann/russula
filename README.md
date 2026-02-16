@@ -96,6 +96,20 @@ session.push(temperature: 0.7)
 session.pop  # Revert to previous settings
 ```
 
+## Formal Specifications
+
+For detailed technical specifications, see the `docs/` directory:
+
+- [**Architecture Specification**](docs/ARCHITECTURE.md) - Component architecture, data flow, state management
+- [**API Reference**](docs/API_SPECIFICATION.md) - Complete public API contracts and usage
+- [**Constraint System**](docs/CONSTRAINT_SYSTEM.md) - Three-tier constraint system (req/check/validators)
+- [**Validation Algorithm**](docs/VALIDATION_ALGORITHM.md) - Instruct-validate-repair loop specification
+- [**Type System**](docs/TYPE_SYSTEM.md) - Type constraints, coercion rules, and validation
+- [**Generative Methods DSL**](docs/GENERATIVE_METHODS_DSL.md) - Method decorator syntax and implementation
+- [**Backend Integration**](docs/BACKEND_INTEGRATION.md) - Backend interface and provider patterns
+
+These specification documents provide implementation-ready details for all Russula components.
+
 ## MVP Scope (v0.1.0)
 
 The initial release focuses on the core programming model:
