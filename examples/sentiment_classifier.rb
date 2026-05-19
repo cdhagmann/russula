@@ -15,24 +15,24 @@ require 'russula'
 class SentimentClassifier
   include Russula::Generative
 
-  # The generative method uses:
-  # - Method signature for interface
-  # - Return type constraint (array of symbols)
-  # - Docstring as the prompt template
-  generative def classify(text:) -> [:positive, :negative, :neutral]
-    "Analyze the sentiment of the following text and classify it as positive, negative, or neutral: <%= text %>"
+  # The generative DSL captures:
+  # - Method name as the first argument
+  # - Return type constraint via `returns:`
+  # - Prompt template via the block return value (ERB-rendered against kwargs)
+  generative :classify, returns: %i[positive negative neutral] do |text:|
+    "Analyze the sentiment of the following text and classify it as positive, negative, or neutral: #{text}"
   end
 
   # Multiple generative methods can coexist
-  generative def explain_sentiment(text:) -> String
-    "Explain in one sentence why this text is <%= classify(text: text) %>: <%= text %>"
+  generative :explain_sentiment, returns: String do |text:|
+    "Explain in one sentence the sentiment expressed by the following text: #{text}"
   end
 end
 
 # Initialize a session
 session = Russula.start_session(
   backend: :openai,
-  api_key: ENV['OPENAI_API_KEY'],
+  api_key: ENV.fetch('OPENAI_API_KEY', nil),
   model: 'gpt-4o-mini'
 )
 
@@ -41,9 +41,9 @@ classifier = SentimentClassifier.new
 
 # Example texts to classify
 texts = [
-  "I absolutely love this product! It exceeded all my expectations.",
+  'I absolutely love this product! It exceeded all my expectations.',
   "This is the worst experience I've ever had. Completely disappointed.",
-  "The item arrived on time and works as described.",
+  'The item arrived on time and works as described.',
   "Not sure how I feel about this. It's okay, I guess."
 ]
 
@@ -55,7 +55,7 @@ texts.each do |text|
 
   puts "Text: #{text}"
   puts "Sentiment: #{sentiment}"
-  puts "-" * 50
+  puts '-' * 50
   puts
 end
 
@@ -82,7 +82,7 @@ puts "\n#{'=' * 50}"
 # Example with temperature adjustment
 puts "\nCreative vs. Deterministic Generation\n#{'=' * 50}\n\n"
 
-puts "Creative (temperature = 0.9):"
+puts 'Creative (temperature = 0.9):'
 session.push(temperature: 0.9)
 creative = session.instruct('Write a creative product tagline for eco-friendly water bottles.')
 puts creative.value
@@ -95,4 +95,4 @@ puts factual.value
 session.pop
 
 puts "\n#{'=' * 50}"
-puts "Demo completed!"
+puts 'Demo completed!'

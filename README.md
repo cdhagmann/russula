@@ -22,10 +22,9 @@ Define LLM-powered functions using Ruby's metaprogramming:
 class SentimentClassifier
   include Russula::Generative
 
-  # The method signature and docstring become the interface
-  generative def classify(text:) -> [:positive, :negative]
-    # Docstring guides the LLM
-    "Classify the sentiment of the input text as 'positive' or 'negative'."
+  # Method name + return type via args; block returns the ERB-rendered prompt template.
+  generative :classify, returns: [:positive, :negative] do |text:|
+    "Classify the sentiment of <%= text %> as 'positive' or 'negative'."
   end
 end
 
@@ -37,7 +36,7 @@ result = classifier.classify(session, text: "I love this!")
 
 **Key benefits:**
 - Type-constrained outputs using Ruby symbols and types
-- Docstrings become prompts automatically
+- Prompt templates declared inline as block bodies
 - Composable, testable functions instead of scattered prompt strings
 
 ### 2. Instruct-Validate-Repair Loop
@@ -151,8 +150,8 @@ def classify(text: str) -> Literal["positive", "negative"]:
 ```
 
 ```ruby
-# Ruby (Russula)
-generative def classify(text:) -> [:positive, :negative]
+# Ruby (Russula) — block-form DSL (Ruby doesn't permit `-> Type` after a def signature)
+generative :classify, returns: [:positive, :negative] do |text:|
   "Docstring"
 end
 ```

@@ -10,15 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial project structure
 - Core `Session` class for managing LLM interactions
-- `Generative` mixin for creating LLM-powered methods
+- `Generative` mixin with block-form DSL: `generative :name, returns: Type do |args| "template" end`
 - Instruct-validate-repair loop with rejection sampling
 - Three-tier constraint system (requirements, checks, custom validators)
-- Type constraints for symbols, basic types, and structured data
+- Type constraints for symbols, basic types, and structured data (JSON coercion for Hash/Array)
 - OpenAI backend integration via `ruby-openai`
 - Session state management with push/pop semantics
-- ERB template support for dynamic prompts
-- Comprehensive test suite with RSpec
+- ERB template support for `Session#instruct` (via `user_variables:`); generative blocks use Ruby `#{}` interpolation
+- Comprehensive test suite with RSpec (76 examples, 7 skipped without `OPENAI_API_KEY`)
 - Integration tests for complete workflows
+
+### Notes
+- The DSL uses block form (`generative :name, returns: Type do |args| ... end`) rather than the
+  `generative def name(args) -> Type` form sketched in early design docs — `-> Type` is not
+  parseable Ruby. See `docs/GENERATIVE_METHODS_DSL.md` for the implementation note.
 
 ### Documentation
 - README with architecture overview and usage examples

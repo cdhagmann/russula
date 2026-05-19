@@ -1,44 +1,46 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe Russula::Session do
   describe '.new' do
     context 'with OpenAI backend' do
       it 'creates a session with default settings' do
-        session = Russula::Session.new(
+        session = described_class.new(
           backend: :openai,
           api_key: 'test-key',
           model: 'gpt-4o-mini'
         )
 
-        expect(session).to be_a(Russula::Session)
+        expect(session).to be_a(described_class)
         expect(session.backend).to be_a(Russula::Backend::OpenAI)
       end
 
       it 'raises error without API key' do
-        expect {
-          Russula::Session.new(backend: :openai, model: 'gpt-4o-mini')
-        }.to raise_error(Russula::BackendError, /API key required/)
+        expect do
+          described_class.new(backend: :openai, model: 'gpt-4o-mini')
+        end.to raise_error(Russula::BackendError, /API key required/)
       end
 
       it 'raises error without model' do
-        expect {
-          Russula::Session.new(backend: :openai, api_key: 'test-key')
-        }.to raise_error(Russula::BackendError, /Model required/)
+        expect do
+          described_class.new(backend: :openai, api_key: 'test-key')
+        end.to raise_error(Russula::BackendError, /Model required/)
       end
     end
 
     context 'with unsupported backend' do
       it 'raises error' do
-        expect {
-          Russula::Session.new(backend: :unknown, api_key: 'key', model: 'model')
-        }.to raise_error(Russula::BackendError, /Unsupported backend/)
+        expect do
+          described_class.new(backend: :unknown, api_key: 'key', model: 'model')
+        end.to raise_error(Russula::BackendError, /Unsupported backend/)
       end
     end
   end
 
   describe '#push and #pop' do
     let(:session) do
-      Russula::Session.new(
+      described_class.new(
         backend: :openai,
         api_key: 'test-key',
         model: 'gpt-4o-mini',
@@ -70,22 +72,22 @@ RSpec.describe Russula::Session do
     end
 
     it 'raises error on pop without push' do
-      expect {
+      expect do
         session.pop
-      }.to raise_error(Russula::Error, /Cannot pop: configuration stack is empty/)
+      end.to raise_error(Russula::Error, /Cannot pop: configuration stack is empty/)
     end
   end
 
   describe '#instruct' do
     let(:session) do
-      Russula::Session.new(
+      described_class.new(
         backend: :openai,
         api_key: ENV['OPENAI_API_KEY'] || 'test-key',
         model: 'gpt-4o-mini'
       )
     end
 
-    context 'basic instruction without requirements', vcr: true do
+    context 'basic instruction without requirements', :vcr do
       it 'generates a response' do
         response = session.instruct('Say hello in one word.')
 
@@ -99,7 +101,7 @@ RSpec.describe Russula::Session do
       it 'interpolates variables using ERB' do
         allow(session.backend).to receive(:generate).and_return('Hello, Alice!')
 
-        response = session.instruct(
+        session.instruct(
           'Say hello to <%= name %>.',
           user_variables: { name: 'Alice' }
         )
@@ -112,9 +114,11 @@ RSpec.describe Russula::Session do
 
     context 'with requirements' do
       it 'validates requirements are met' do
-        # This will be a full integration test once we have validation
-        # For now, just test that requirements are accepted
-        expect {
+        # Smoke test: the requirements kwarg is accepted and the call succeeds.
+        # The end-to-end validation behaviour is covered by validation_spec.rb.
+        allow(session.backend).to receive(:generate).and_return('A polite, brief greeting.')
+
+        expect do
           session.instruct(
             'Write a greeting.',
             requirements: [
@@ -122,14 +126,14 @@ RSpec.describe Russula::Session do
               Russula.req('be brief')
             ]
           )
-        }.not_to raise_error
+        end.not_to raise_error
       end
     end
   end
 
   describe '#context' do
     let(:session) do
-      Russula::Session.new(
+      described_class.new(
         backend: :openai,
         api_key: 'test-key',
         model: 'gpt-4o-mini'

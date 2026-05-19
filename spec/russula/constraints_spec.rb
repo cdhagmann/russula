@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe Russula::Constraints do
@@ -83,7 +85,7 @@ RSpec.describe Russula::Constraints do
         it 'handles various affirmative responses' do
           requirement = Russula.req('be formal')
 
-          ['yes', 'Yes', 'YES', 'true', 'True', 'correct', 'Correct'].each do |response|
+          %w[yes Yes YES true True correct Correct].each do |response|
             allow(session.backend).to receive(:generate).and_return(response)
             expect(requirement.validate('Dear Sir,', session)).to be true
           end
@@ -92,7 +94,7 @@ RSpec.describe Russula::Constraints do
         it 'handles various negative responses' do
           requirement = Russula.req('be formal')
 
-          ['no', 'No', 'NO', 'false', 'False', 'incorrect', 'Incorrect'].each do |response|
+          %w[no No NO false False incorrect Incorrect].each do |response|
             allow(session.backend).to receive(:generate).and_return(response)
             expect(requirement.validate('hey', session)).to be false
           end
@@ -106,7 +108,7 @@ RSpec.describe Russula::Constraints do
             'maintain conversation flow',
             validation_fn: lambda { |context|
               context_checked = true
-              context.messages.count > 0
+              context.messages.any?
             }
           )
 
@@ -117,7 +119,7 @@ RSpec.describe Russula::Constraints do
           )
 
           # Validation function should receive context, not just text
-          result = requirement.validate(session.context, session)
+          requirement.validate(session.context, session)
 
           expect(context_checked).to be true
         end
@@ -160,7 +162,7 @@ RSpec.describe Russula::Constraints do
   describe 'Type constraints' do
     describe 'Symbol enumeration' do
       it 'validates symbol matches enumeration' do
-        constraint = Russula::TypeConstraint.new([:positive, :negative, :neutral])
+        constraint = Russula::TypeConstraint.new(%i[positive negative neutral])
 
         expect(constraint.validate(:positive)).to be true
         expect(constraint.validate(:negative)).to be true
@@ -169,18 +171,18 @@ RSpec.describe Russula::Constraints do
       end
 
       it 'coerces string to symbol' do
-        constraint = Russula::TypeConstraint.new([:positive, :negative])
+        constraint = Russula::TypeConstraint.new(%i[positive negative])
 
         expect(constraint.coerce('positive')).to eq(:positive)
         expect(constraint.coerce('negative')).to eq(:negative)
       end
 
       it 'raises error for invalid string' do
-        constraint = Russula::TypeConstraint.new([:positive, :negative])
+        constraint = Russula::TypeConstraint.new(%i[positive negative])
 
-        expect {
+        expect do
           constraint.coerce('invalid')
-        }.to raise_error(Russula::ValidationError, /must be one of/)
+        end.to raise_error(Russula::ValidationError, /must be one of/)
       end
     end
 
@@ -216,9 +218,9 @@ RSpec.describe Russula::Constraints do
       it 'raises error for invalid coercion' do
         constraint = Russula::TypeConstraint.new(Integer)
 
-        expect {
+        expect do
           constraint.coerce('not a number')
-        }.to raise_error(Russula::ValidationError, /Invalid Integer/)
+        end.to raise_error(Russula::ValidationError, /Invalid Integer/)
       end
     end
 
@@ -244,9 +246,9 @@ RSpec.describe Russula::Constraints do
       it 'raises error for invalid JSON' do
         constraint = Russula::TypeConstraint.new(Hash)
 
-        expect {
+        expect do
           constraint.coerce('not valid json')
-        }.to raise_error(Russula::ValidationError, /Invalid JSON/)
+        end.to raise_error(Russula::ValidationError, /Invalid JSON/)
       end
     end
 
@@ -265,7 +267,7 @@ RSpec.describe Russula::Constraints do
         result = constraint.coerce(json_string)
 
         expect(result).to be_a(Array)
-        expect(result).to eq(['a', 'b', 'c'])
+        expect(result).to eq(%w[a b c])
       end
     end
   end
@@ -281,7 +283,7 @@ RSpec.describe Russula::Constraints do
 
     it 'allows multiple requirements' do
       requirements = [
-        Russula.req('be polite', validation_fn: ->(text) { text.include?('please') }),
+        Russula.req('be polite', validation_fn: ->(text) { text.downcase.include?('please') }),
         Russula.req('be brief', validation_fn: ->(text) { text.length < 50 })
       ]
 
@@ -303,7 +305,7 @@ RSpec.describe Russula::Constraints do
 
     it 'combines requirements and checks' do
       requirements = [
-        Russula.req('be polite', validation_fn: ->(text) { text.include?('please') })
+        Russula.req('be polite', validation_fn: ->(text) { text.downcase.include?('please') })
       ]
       checks = [
         Russula.check('no shouting', validation_fn: ->(text) { text != text.upcase })

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe 'Complete Workflow Integration' do
@@ -15,13 +17,13 @@ RSpec.describe 'Complete Workflow Integration' do
         'Write an email inviting the team to a celebration party.',
         requirements: [
           Russula.req('use "Dear Team" as greeting',
-                     validation_fn: ->(text) { text.include?('Dear Team') }),
+                      validation_fn: ->(text) { text.include?('Dear Team') }),
           Russula.req('mention the date Friday, March 15th',
-                     validation_fn: ->(text) { text.include?('March 15') })
+                      validation_fn: ->(text) { text.include?('March 15') })
         ],
         checks: [
           Russula.check('avoid negative language',
-                       validation_fn: ->(text) { !text.match?(/unfortunately|regret|sorry/) })
+                        validation_fn: ->(text) { !text.match?(/unfortunately|regret|sorry/) })
         ],
         strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 5)
       )
@@ -37,8 +39,8 @@ RSpec.describe 'Complete Workflow Integration' do
       Class.new do
         include Russula::Generative
 
-        generative def classify(text:) -> [:positive, :negative, :neutral]
-          "Analyze the sentiment of the following text and classify it as positive, negative, or neutral."
+        generative :classify, returns: %i[positive negative neutral] do |text:|
+          "Classify the sentiment of the following text as positive, negative, or neutral. Input: #{text}"
         end
       end
     end
@@ -60,12 +62,12 @@ RSpec.describe 'Complete Workflow Integration' do
       Class.new do
         include Russula::Generative
 
-        generative def start_story(theme:) -> String
-          "Write the opening paragraph of a story with theme: <%= theme %>"
+        generative :start_story, returns: String do |theme:|
+          "Write the opening paragraph of a story with theme: #{theme}"
         end
 
-        generative def continue_story -> String
-          "Continue the story from where we left off, maintaining consistency."
+        generative :continue_story, returns: String do
+          'Continue the story from where we left off, maintaining consistency.'
         end
       end
     end
@@ -92,8 +94,8 @@ RSpec.describe 'Complete Workflow Integration' do
       Class.new do
         include Russula::Generative
 
-        generative def extract_contact_info(text:) -> Hash
-          "Extract name, email, and phone number from the text and return as JSON."
+        generative :extract_contact_info, returns: Hash do |text:|
+          "Extract name, email, and phone number from the text and return as JSON. Input: #{text}"
         end
       end
     end
@@ -154,7 +156,7 @@ RSpec.describe 'Complete Workflow Integration' do
         'Summarize the concept of generative programming.',
         requirements: [
           Russula.req('keep under 100 characters',
-                     validation_fn: ->(text) { text.length < 100 })
+                      validation_fn: ->(text) { text.length < 100 })
         ],
         strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 5),
         return_sampling_results: true
@@ -174,7 +176,7 @@ RSpec.describe 'Complete Workflow Integration' do
     it 'supports complex templating' do
       allow(session.backend).to receive(:generate).and_return('Email generated')
 
-      result = session.instruct(
+      session.instruct(
         'Write an email to <%= recipient %> about <%= topic %> for <%= date %>.',
         user_variables: {
           recipient: 'the engineering team',
@@ -196,16 +198,16 @@ RSpec.describe 'Complete Workflow Integration' do
     it 'raises clear error when validation budget exhausted' do
       allow(session.backend).to receive(:generate).and_return('Never valid')
 
-      expect {
+      expect do
         session.instruct(
           'Generate text.',
           requirements: [
             Russula.req('include MAGIC_WORD',
-                       validation_fn: ->(text) { text.include?('MAGIC_WORD') })
+                        validation_fn: ->(text) { text.include?('MAGIC_WORD') })
           ],
           strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 2)
         )
-      }.to raise_error(Russula::ValidationError) do |error|
+      end.to raise_error(Russula::ValidationError) do |error|
         expect(error.message).to include('Budget exhausted')
         expect(error.message).to include('2 attempts')
       end
@@ -215,17 +217,17 @@ RSpec.describe 'Complete Workflow Integration' do
       classifier_class = Class.new do
         include Russula::Generative
 
-        generative def classify(text:) -> [:a, :b, :c]
-          "Classify the text"
+        generative :classify, returns: %i[a b c] do |text:|
+          "Classify the text. Input: #{text}"
         end
       end
 
       classifier = classifier_class.new
       allow(session.backend).to receive(:generate).and_return('invalid_option')
 
-      expect {
+      expect do
         classifier.classify(session, text: 'Some text')
-      }.to raise_error(Russula::ValidationError, /must be one of: a, b, c/)
+      end.to raise_error(Russula::ValidationError, /must be one of: a, b, c/)
     end
   end
 end

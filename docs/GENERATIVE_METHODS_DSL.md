@@ -4,6 +4,14 @@
 **Status:** Draft
 **Last Updated:** 2026-02-16
 
+> **Implementation note (MVP):** Ruby does not support `-> Type` annotations on
+> method definitions (`->` parses as a lambda literal). v0.1.0 therefore uses a
+> block-form DSL: `generative :name, returns: Type do |args| "template" end`.
+> The semantics described below (type constraints, ERB interpolation, session
+> injection, return-type coercion) apply identically — mentally rewrite
+> `generative def foo(args) -> Type` as `generative :foo, returns: Type do |args|`,
+> and treat the block return value as the docstring/prompt template.
+
 ## Table of Contents
 
 1. [Overview](#overview)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe Russula::Generative do
@@ -6,12 +8,12 @@ RSpec.describe Russula::Generative do
       Class.new do
         include Russula::Generative
 
-        generative def classify_sentiment(text:) -> [:positive, :negative, :neutral]
-          "Classify the sentiment of the input text as positive, negative, or neutral."
+        generative :classify_sentiment, returns: %i[positive negative neutral] do |text:|
+          "Classify the sentiment of the input text as positive, negative, or neutral. Input: #{text}"
         end
 
-        generative def summarize(text:, max_words: 50) -> String
-          "Summarize the input text in at most <%= max_words %> words."
+        generative :summarize, returns: String do |text:, max_words: 50|
+          "Summarize the input text in at most #{max_words} words. Input: #{text}"
         end
       end
     end
@@ -32,18 +34,18 @@ RSpec.describe Russula::Generative do
     it 'requires session as first argument' do
       instance = test_class.new
 
-      expect {
+      expect do
         instance.classify_sentiment(text: 'I love this!')
-      }.to raise_error(ArgumentError, /session required/)
+      end.to raise_error(ArgumentError, /session required/)
     end
 
     it 'validates return type constraints' do
       instance = test_class.new
       allow(session.backend).to receive(:generate).and_return('happy')
 
-      expect {
+      expect do
         instance.classify_sentiment(session, text: 'I love this!')
-      }.to raise_error(Russula::ValidationError, /Invalid return value.*must be one of/)
+      end.to raise_error(Russula::ValidationError, /Invalid return value.*must be one of/)
     end
 
     it 'accepts valid return type' do
@@ -88,20 +90,20 @@ RSpec.describe Russula::Generative do
       Class.new do
         include Russula::Generative
 
-        generative def example_method -> [:a, :b]
-          "Example docstring"
+        generative :example_method, returns: %i[a b] do
+          'Example docstring'
         end
       end
     end
 
     it 'stores return type constraint metadata' do
       metadata = test_class.generative_methods[:example_method]
-      expect(metadata[:return_type]).to eq([:a, :b])
+      expect(metadata[:return_type]).to eq(%i[a b])
     end
 
     it 'stores docstring metadata' do
       metadata = test_class.generative_methods[:example_method]
-      expect(metadata[:docstring]).to eq("Example docstring")
+      expect(metadata[:docstring]).to eq('Example docstring')
     end
   end
 
@@ -110,8 +112,8 @@ RSpec.describe Russula::Generative do
       Class.new do
         include Russula::Generative
 
-        generative def extract_info(text:) -> Hash
-          "Extract name, age, and city from the text and return as a hash."
+        generative :extract_info, returns: Hash do |text:|
+          "Extract name, age, and city from the text and return as a hash. Input: #{text}"
         end
       end
     end
@@ -131,9 +133,9 @@ RSpec.describe Russula::Generative do
       )
 
       # This would require JSON parsing logic
-      expect {
+      expect do
         instance.extract_info(session, text: 'Alice is 30 and lives in NYC.')
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 
@@ -142,8 +144,8 @@ RSpec.describe Russula::Generative do
       Class.new do
         include Russula::Generative
 
-        generative def continue_story(prompt:) -> String
-          "Continue the story from the previous context."
+        generative :continue_story, returns: String do |prompt:|
+          "Continue the story from the previous context. Prompt: #{prompt}"
         end
       end
     end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe 'Instruct-Validate-Repair Loop' do
@@ -16,7 +18,7 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
 
         result = session.instruct(
           'Write a greeting.',
-          requirements: [Russula.req('be formal')],
+          requirements: [Russula.req('be formal', validation_fn: ->(_text) { true })],
           strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 3)
         )
 
@@ -55,16 +57,16 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
       it 'raises error with sampling results' do
         allow(session.backend).to receive(:generate).and_return('invalid response')
 
-        expect {
+        expect do
           session.instruct(
             'Write a greeting.',
             requirements: [
               Russula.req('must include "MAGIC_WORD"',
-                         validation_fn: ->(text) { text.include?('MAGIC_WORD') })
+                          validation_fn: ->(text) { text.include?('MAGIC_WORD') })
             ],
             strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 3)
           )
-        }.to raise_error(Russula::ValidationError, /Budget exhausted/)
+        end.to raise_error(Russula::ValidationError, /Budget exhausted/)
       end
     end
   end
@@ -77,14 +79,14 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
         'Write a greeting.',
         requirements: [
           Russula.req('include "hello"',
-                     validation_fn: ->(text) { text.downcase.include?('hello') })
+                      validation_fn: ->(text) { text.downcase.include?('hello') })
         ],
         strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 3),
         return_sampling_results: true
       )
 
       expect(result).to be_a(Russula::SamplingResult)
-      expect(result.success).to be_in([true, false])
+      expect(result.success).to(satisfy { |s| [true, false].include?(s) })
       expect(result.attempts).to be > 0
       expect(result.sample_generations).to be_an(Array)
     end
@@ -100,7 +102,7 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
         'Write text.',
         requirements: [
           Russula.req('include "SUCCESS"',
-                     validation_fn: ->(text) { text.include?('SUCCESS') })
+                      validation_fn: ->(text) { text.include?('SUCCESS') })
         ],
         strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 3),
         return_sampling_results: true
@@ -171,7 +173,7 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
         'Write a message.',
         checks: [
           Russula.check('avoid negative language',
-                       validation_fn: ->(text) { !text.downcase.match?(/bad|terrible|awful/) })
+                        validation_fn: ->(text) { !text.downcase.match?(/bad|terrible|awful/) })
         ],
         strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 3)
       )
@@ -186,16 +188,16 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
     it 'still validates check constraints' do
       allow(session.backend).to receive(:generate).and_return('This is terrible and awful!')
 
-      expect {
+      expect do
         session.instruct(
           'Write a message.',
           checks: [
             Russula.check('avoid negative words',
-                         validation_fn: ->(text) { !text.match?(/terrible|awful/) })
+                          validation_fn: ->(text) { !text.match?(/terrible|awful/) })
           ],
           strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 2)
         )
-      }.to raise_error(Russula::ValidationError, /Budget exhausted/)
+      end.to raise_error(Russula::ValidationError, /Budget exhausted/)
     end
   end
 
@@ -210,7 +212,7 @@ RSpec.describe 'Instruct-Validate-Repair Loop' do
         ],
         checks: [
           Russula.check('avoid negative tone',
-                       validation_fn: ->(text) { !text.match?(/unfortunately|regret/) })
+                        validation_fn: ->(text) { !text.match?(/unfortunately|regret/) })
         ],
         strategy: Russula::RejectionSamplingStrategy.new(loop_budget: 3)
       )

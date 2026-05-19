@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe Russula::Backend do
@@ -16,15 +18,15 @@ RSpec.describe Russula::Backend do
       end
 
       it 'raises error without API key' do
-        expect {
+        expect do
           Russula::Backend::OpenAI.new(model: 'gpt-4o-mini')
-        }.to raise_error(Russula::BackendError, /API key required/)
+        end.to raise_error(Russula::BackendError, /API key required/)
       end
 
       it 'raises error without model' do
-        expect {
+        expect do
           Russula::Backend::OpenAI.new(api_key: 'test-key')
-        }.to raise_error(Russula::BackendError, /Model required/)
+        end.to raise_error(Russula::BackendError, /Model required/)
       end
     end
 
@@ -98,9 +100,9 @@ RSpec.describe Russula::Backend do
           allow(OpenAI::Client).to receive(:new).and_return(client)
           allow(client).to receive(:chat).and_raise(StandardError.new('API Error'))
 
-          expect {
+          expect do
             backend.generate(messages)
-          }.to raise_error(Russula::BackendError, /API Error/)
+          end.to raise_error(Russula::BackendError, /API Error/)
         end
 
         it 'raises BackendError on invalid response format' do
@@ -110,9 +112,9 @@ RSpec.describe Russula::Backend do
           allow(OpenAI::Client).to receive(:new).and_return(client)
           allow(client).to receive(:chat).and_return({}) # Invalid response
 
-          expect {
+          expect do
             backend.generate(messages)
-          }.to raise_error(Russula::BackendError, /Invalid response/)
+          end.to raise_error(Russula::BackendError, /Invalid response/)
         end
       end
     end
@@ -142,7 +144,7 @@ RSpec.describe Russula::Backend do
 
   describe 'Backend factory' do
     it 'creates OpenAI backend' do
-      backend = Russula::Backend.create(
+      backend = described_class.create(
         type: :openai,
         api_key: 'test-key',
         model: 'gpt-4o-mini'
@@ -152,13 +154,13 @@ RSpec.describe Russula::Backend do
     end
 
     it 'raises error for unsupported backend type' do
-      expect {
-        Russula::Backend.create(
+      expect do
+        described_class.create(
           type: :unknown,
           api_key: 'test-key',
           model: 'some-model'
         )
-      }.to raise_error(Russula::BackendError, /Unsupported backend type/)
+      end.to raise_error(Russula::BackendError, /Unsupported backend type/)
     end
   end
 end
